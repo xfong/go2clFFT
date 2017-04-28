@@ -449,8 +449,11 @@ func (FFTplan *ClFFTPlan) SetBatchSize(batchSize int) error {
 
 func (FFTplan *ClFFTPlan) GetDim() (ClFFTDim, error) {
 	var outVal C.clfftDim
-	defer C.free(unsafe.Pointer(&outVal))
-	err := C.clfftGetPlanDim(FFTplan.clFFTHandle, &outVal, nil)
+	var outArrLength C.cl_uint
+	var err C.clfftStatus
+	if err = C.clfftGetPlanDim(FFTplan.clFFTHandle, &outVal, &outArrLength); err != C.CLFFT_SUCCESS {
+		return -1, toError(err)
+	}
 	switch outVal {
 	default:
 		return -1, toError(err)
@@ -480,14 +483,10 @@ func (FFTplan *ClFFTPlan) GetLength() ([]int, error) {
 	var outVal C.clfftDim
 	var outArrLength C.cl_uint
 	var err C.clfftStatus
-	defer C.free(unsafe.Pointer(&outVal))
-	defer C.free(unsafe.Pointer(&outArrLength))
-	defer C.free(unsafe.Pointer(&err))
 	if err = C.clfftGetPlanDim(FFTplan.clFFTHandle, &outVal, &outArrLength); err != C.CLFFT_SUCCESS {
 		return []int{}, toError(err)
 	}
 	outList := make([]C.size_t, int(outArrLength))
-	err = C.clfftGetPlanLength(FFTplan.clFFTHandle, outVal, &outList[0])
 	if err = C.clfftGetPlanLength(FFTplan.clFFTHandle, outVal, &outList[0]); err != C.CLFFT_SUCCESS {
 		return []int{}, toError(err)
 	}
